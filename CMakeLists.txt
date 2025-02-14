@@ -28,7 +28,7 @@ pico_set_program_name(ConversorAD "ConversorAD")
 pico_set_program_version(ConversorAD "0.1")
 pico_enable_stdio_uart(ConversorAD 0)
 pico_enable_stdio_usb(ConversorAD 1)
-target_link_libraries(ConversorAD pico_stdlib hardware_i2c hardware_adc)
+target_link_libraries(ConversorAD pico_stdlib hardware_i2c hardware_adc hardware_pwm)
 target_include_directories(ConversorAD PRIVATE   ${CMAKE_CURRENT_LIST_DIR})
 pico_add_extra_outputs(ConversorAD)
 
