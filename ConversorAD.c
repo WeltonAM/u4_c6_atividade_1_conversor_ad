@@ -21,12 +21,14 @@
 #define LED_R 11          // Pino do LED vermelho
 #define LED_G 12          // Pino do LED verde
 #define LED_B 13          // Pino do LED azul
+#define DEBOUNCE_DELAY 50 // Tempo de debounce (50 ms)
 
 // Variáveis globais
-ssd1306_t ssd;                 // Estrutura para o display SSD1306
-bool led_pwm_ativo = true;     // Flag que indica se os LEDs PWM estão ativos
-bool led_verde_estado = false; // Estado do LED verde
-int borda_estilo = 0;          // Estilo da borda do display (0, 1, 2)
+ssd1306_t ssd;                           // Estrutura para o display SSD1306
+bool led_pwm_ativo = true;               // Flag que indica se os LEDs PWM estão ativos
+bool led_verde_estado = false;           // Estado do LED verde
+int borda_estilo = 0;                    // Estilo da borda do display (0, 1, 2)
+static uint32_t last_interrupt_time = 0; // Último tempo de interrupção
 
 // Função para inicializar PWM em um pino
 uint pwm_init_gpio(uint gpio, uint wrap)
@@ -41,8 +43,13 @@ uint pwm_init_gpio(uint gpio, uint wrap)
 // Função de interrupção para o botão do joystick
 void joystick_button_irq(uint gpio, uint32_t events)
 {
-  led_verde_estado = !led_verde_estado;  // Alterna o estado do LED verde
-  borda_estilo = (borda_estilo + 1) % 3; // Altera o estilo da borda do display
+  uint32_t current_time = to_ms_since_boot(get_absolute_time());
+  if (current_time - last_interrupt_time > DEBOUNCE_DELAY)
+  {
+    led_verde_estado = !led_verde_estado;  // Alterna o estado do LED verde
+    borda_estilo = (borda_estilo + 1) % 3; // Altera o estilo da borda do display
+    last_interrupt_time = current_time;
+  }
 }
 
 // Função de interrupção para o botão A
