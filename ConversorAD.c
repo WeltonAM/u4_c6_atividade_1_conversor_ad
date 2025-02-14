@@ -55,15 +55,25 @@ void joystick_button_irq(uint gpio, uint32_t events)
 // Função de interrupção para o botão A
 void botao_a_irq(uint gpio, uint32_t events)
 {
-  led_pwm_ativo = !led_pwm_ativo; // Alterna a ativação do PWM dos LEDs
+  uint32_t current_time = to_ms_since_boot(get_absolute_time());
+  if (current_time - last_interrupt_time > DEBOUNCE_DELAY)
+  {
+    led_pwm_ativo = !led_pwm_ativo; // Alterna a ativação do PWM dos LEDs
+    last_interrupt_time = current_time;
+  }
 }
 
 // Função de interrupção para o botão B
 void botao_b_irq(uint gpio, uint32_t events)
 {
-  ssd1306_fill(&ssd, false); // Limpa o display SSD1306
-  ssd1306_send_data(&ssd);   // Atualiza o display
-  reset_usb_boot(0, 0);      // Reinicia o dispositivo
+  uint32_t current_time = to_ms_since_boot(get_absolute_time());
+  if (current_time - last_interrupt_time > DEBOUNCE_DELAY)
+  {
+    ssd1306_fill(&ssd, false); // Limpa o display SSD1306
+    ssd1306_send_data(&ssd);   // Atualiza o display
+    reset_usb_boot(0, 0);      // Reinicia o dispositivo
+    last_interrupt_time = current_time;
+  }
 }
 
 // Função principal
