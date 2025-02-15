@@ -6,6 +6,7 @@
 #include "lib/ssd1306.h"
 #include "lib/font.h"
 #include "pico/bootrom.h"
+#include "hardware/pwm.h"
 
 #define I2C_PORT i2c1
 #define I2C_SDA 14
@@ -15,8 +16,10 @@
 
 #define JOYSTICK_X_PIN 26
 #define JOYSTICK_Y_PIN 27
+#define RED_LED_PIN 13
 
 #define PIXEL_SIZE 8
+#define PWM_WRAP 4095
 
 volatile bool button_pressed = false;
 uint8_t pixel_x = (WIDTH - PIXEL_SIZE) / 2;
@@ -49,8 +52,19 @@ uint8_t map_adc_to_screen(uint16_t adc_value, uint8_t max_value)
   return (uint8_t)((adc_value * max_value) / 4095);
 }
 
+void setup_pwm_for_led(uint gpio)
+{
+  gpio_set_function(gpio, GPIO_FUNC_PWM);
+  uint slice_num = pwm_gpio_to_slice_num(gpio);
+  pwm_set_wrap(slice_num, PWM_WRAP);
+  pwm_set_enabled(slice_num, true);
+}
+
 int main()
 {
+  stdio_init_all();
+  adc_init();
+
   i2c_init(I2C_PORT, 400 * 1000);
   gpio_set_function(I2C_SDA, GPIO_FUNC_I2C);
   gpio_set_function(I2C_SCL, GPIO_FUNC_I2C);
@@ -65,8 +79,8 @@ int main()
   ssd1306_send_data(&ssd);
 
   setup_button_interrupt();
+  setup_pwm_for_led(RED_LED_PIN);
 
-  adc_init();
   adc_gpio_init(JOYSTICK_X_PIN);
   adc_gpio_init(JOYSTICK_Y_PIN);
 
@@ -87,6 +101,18 @@ int main()
 
     ssd1306_rect(&ssd, pixel_y, pixel_x, PIXEL_SIZE, PIXEL_SIZE, true, true);
     ssd1306_send_data(&ssd);
+
+    uint16_t pwm_value = 0;
+    if (adc_value_y < 1000)
+    {
+      pwm_value = (uint16_t)((1000 - adc_value_y) / 1000.0 * PWM_WRAP);
+    }
+    else if (adc_value_y > 3500)
+    {
+      pwm_value = 0;
+    }
+
+    pwm_set_gpio_level(RED_LED_PIN, pwm_value);
 
     if (button_pressed)
     {
