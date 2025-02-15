@@ -16,12 +16,11 @@
 #define JOYSTICK_X_PIN 26
 #define JOYSTICK_Y_PIN 27
 
-#define JOYSTICK_CENTER_MIN 1500
-#define JOYSTICK_CENTER_MAX 2500
+#define PIXEL_SIZE 8
 
 volatile bool button_pressed = false;
-uint8_t pixel_x = (WIDTH - 8) / 2;
-uint8_t pixel_y = (HEIGHT - 8) / 2;
+uint8_t pixel_x = (WIDTH - PIXEL_SIZE) / 2;
+uint8_t pixel_y = (HEIGHT - PIXEL_SIZE) / 2;
 
 void enter_bootsel()
 {
@@ -45,46 +44,9 @@ void setup_button_interrupt()
   gpio_set_irq_enabled_with_callback(BUTTON_PIN, GPIO_IRQ_EDGE_FALL, true, &button_isr_handler);
 }
 
-void move_left()
+uint8_t map_adc_to_screen(uint16_t adc_value, uint8_t max_value)
 {
-  if (pixel_x > 0)
-  {
-    pixel_x--;
-  }
-}
-
-void move_right()
-{
-  if (pixel_x < WIDTH - 8)
-  {
-    pixel_x++;
-  }
-}
-
-void move_up()
-{
-  if (pixel_y < HEIGHT - 8)
-  {
-    pixel_y++;
-  }
-}
-
-void move_down()
-{
-  if (pixel_y > 0)
-  {
-    pixel_y--;
-  }
-}
-
-void reset_position_if_centered(uint16_t adc_value_x, uint16_t adc_value_y)
-{
-  if (adc_value_x >= JOYSTICK_CENTER_MIN && adc_value_x <= JOYSTICK_CENTER_MAX &&
-      adc_value_y >= JOYSTICK_CENTER_MIN && adc_value_y <= JOYSTICK_CENTER_MAX)
-  {
-    pixel_x = (WIDTH - 8) / 2;
-    pixel_y = (HEIGHT - 8) / 2;
-  }
+  return (uint8_t)((adc_value * max_value) / 4095);
 }
 
 int main()
@@ -120,27 +82,10 @@ int main()
 
     ssd1306_fill(&ssd, false);
 
-    if (adc_value_x < 1000)
-    {
-      move_left();
-    }
-    else if (adc_value_x > 3500)
-    {
-      move_right();
-    }
+    pixel_x = map_adc_to_screen(adc_value_x, WIDTH - PIXEL_SIZE);
+    pixel_y = map_adc_to_screen(4095 - adc_value_y, HEIGHT - PIXEL_SIZE);
 
-    if (adc_value_y < 1000)
-    {
-      move_up();
-    }
-    else if (adc_value_y > 3500)
-    {
-      move_down();
-    }
-
-    reset_position_if_centered(adc_value_x, adc_value_y);
-
-    ssd1306_rect(&ssd, pixel_y, pixel_x, 8, 8, true, true);
+    ssd1306_rect(&ssd, pixel_y, pixel_x, PIXEL_SIZE, PIXEL_SIZE, true, true);
     ssd1306_send_data(&ssd);
 
     if (button_pressed)
