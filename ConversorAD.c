@@ -16,10 +16,10 @@
 
 #define JOYSTICK_X_PIN 26
 #define JOYSTICK_Y_PIN 27
-#define RED_LED_PIN 13
+#define BLUE_LED_PIN 12
 
 #define PIXEL_SIZE 8
-#define PWM_WRAP 4095
+#define PWM_WRAP 255
 
 volatile bool button_pressed = false;
 uint8_t pixel_x = (WIDTH - PIXEL_SIZE) / 2;
@@ -79,7 +79,7 @@ int main()
   ssd1306_send_data(&ssd);
 
   setup_button_interrupt();
-  setup_pwm_for_led(RED_LED_PIN);
+  setup_pwm_for_led(BLUE_LED_PIN);
 
   adc_gpio_init(JOYSTICK_X_PIN);
   adc_gpio_init(JOYSTICK_Y_PIN);
@@ -103,16 +103,13 @@ int main()
     ssd1306_send_data(&ssd);
 
     uint16_t pwm_value = 0;
-    if (adc_value_y < 1000)
+
+    if (adc_value_y > 2049)
     {
-      pwm_value = (uint16_t)((1000 - adc_value_y) / 1000.0 * PWM_WRAP);
-    }
-    else if (adc_value_y > 3500)
-    {
-      pwm_value = 0;
+      pwm_value = (uint16_t)((adc_value_y - 2049) / 2050.0 * 255);
     }
 
-    pwm_set_gpio_level(RED_LED_PIN, pwm_value);
+    pwm_set_gpio_level(BLUE_LED_PIN, pwm_value);
 
     if (button_pressed)
     {
