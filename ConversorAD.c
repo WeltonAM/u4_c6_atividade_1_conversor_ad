@@ -13,7 +13,12 @@
 #define endereco 0x3C
 #define BUTTON_PIN 6
 
+#define JOYSTICK_X_PIN 26
+#define JOYSTICK_Y_PIN 27
+
 volatile bool button_pressed = false;
+uint8_t pixel_x = (WIDTH - 8) / 2;
+uint8_t pixel_y = (HEIGHT - 8) / 2;
 
 void enter_bootsel()
 {
@@ -37,6 +42,38 @@ void setup_button_interrupt()
   gpio_set_irq_enabled_with_callback(BUTTON_PIN, GPIO_IRQ_EDGE_FALL, true, &button_isr_handler);
 }
 
+void move_left()
+{
+  if (pixel_x > 0)
+  {
+    pixel_x--;
+  }
+}
+
+void move_right()
+{
+  if (pixel_x < WIDTH - 8)
+  {
+    pixel_x++;
+  }
+}
+
+void move_up()
+{
+  if (pixel_y < HEIGHT - 8)
+  {
+    pixel_y++;
+  }
+}
+
+void move_down()
+{
+  if (pixel_y > 0)
+  {
+    pixel_y--;
+  }
+}
+
 int main()
 {
   i2c_init(I2C_PORT, 400 * 1000);
@@ -50,22 +87,53 @@ int main()
   ssd1306_config(&ssd);
 
   ssd1306_fill(&ssd, false);
-
-  uint8_t center_x = (WIDTH - 8) / 2;
-  uint8_t center_y = (HEIGHT - 8) / 2;
-
-  ssd1306_rect(&ssd, center_y, center_x, 8, 8, true, true);
-
   ssd1306_send_data(&ssd);
 
   setup_button_interrupt();
 
+  adc_init();
+  adc_gpio_init(JOYSTICK_X_PIN);
+  adc_gpio_init(JOYSTICK_Y_PIN);
+
+  uint16_t adc_value_x;
+  uint16_t adc_value_y;
+
   while (true)
   {
+    adc_select_input(1);
+    adc_value_x = adc_read();
+    adc_select_input(0);
+    adc_value_y = adc_read();
+
+    ssd1306_fill(&ssd, false);
+
+    if (adc_value_x < 1000)
+    {
+      move_left();
+    }
+    else if (adc_value_x > 3500)
+    {
+      move_right();
+    }
+
+    if (adc_value_y < 1000)
+    {
+      move_up();
+    }
+    else if (adc_value_y > 3500)
+    {
+      move_down();
+    }
+
+    ssd1306_rect(&ssd, pixel_y, pixel_x, 8, 8, true, true);
+    ssd1306_send_data(&ssd);
+
     if (button_pressed)
     {
       button_pressed = false;
       enter_bootsel();
     }
+
+    sleep_ms(100);
   }
 }
