@@ -104,9 +104,13 @@ int main()
 
     uint16_t pwm_value = 0;
 
-    if (adc_value_y > 2049)
+    if (adc_value_y > 2200)
     {
-      pwm_value = (uint16_t)((adc_value_y - 2049) / 2050.0 * 255);
+      pwm_value = (uint16_t)((adc_value_y - 2200) / 2200.0 * 255);
+    }
+    else if (adc_value_y < 1800)
+    {
+      pwm_value = (uint16_t)((1800 - adc_value_y) / 1800.0 * 255);
     }
 
     pwm_set_gpio_level(BLUE_LED_PIN, pwm_value);
