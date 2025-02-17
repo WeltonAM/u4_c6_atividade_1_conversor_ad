@@ -27,7 +27,8 @@
 volatile bool button_pressed = false;
 volatile bool green_led_state = false;
 uint8_t pixel_x = (WIDTH - PIXEL_SIZE) / 2;
-uint8_t pixel_y = (HEIGHT - PIXEL_SIZE) / 2;
+uint8_t pixel_y = (WIDTH - PIXEL_SIZE) / 2;
+bool circle_border = false;
 
 void enter_bootsel()
 {
@@ -108,8 +109,14 @@ int main()
 
     ssd1306_fill(&ssd, false);
 
-    // Desenhar borda
-    ssd1306_rect(&ssd, 0, 0, WIDTH, HEIGHT, true, false);
+    if (circle_border)
+    {
+      ssd1306_circle(&ssd, WIDTH / 2.15, HEIGHT / 2, (WIDTH < HEIGHT ? WIDTH : HEIGHT) / 2 - 2, true);
+    }
+    else
+    {
+      ssd1306_rect(&ssd, 0, 0, WIDTH, HEIGHT, true, false);
+    }
 
     pixel_x = map_adc_to_screen(adc_value_x, WIDTH - PIXEL_SIZE);
     pixel_y = map_adc_to_screen(4095 - adc_value_y, HEIGHT - PIXEL_SIZE);
@@ -151,6 +158,7 @@ int main()
     {
       green_led_state = !green_led_state;
       gpio_put(GREEN_LED_PIN, green_led_state);
+      circle_border = !circle_border;
       sleep_ms(300);
     }
 
