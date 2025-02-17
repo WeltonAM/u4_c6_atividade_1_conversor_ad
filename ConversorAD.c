@@ -108,6 +108,9 @@ int main()
 
     ssd1306_fill(&ssd, false);
 
+    // Desenhar borda
+    ssd1306_rect(&ssd, 0, 0, WIDTH, HEIGHT, true, false);
+
     pixel_x = map_adc_to_screen(adc_value_x, WIDTH - PIXEL_SIZE);
     pixel_y = map_adc_to_screen(4095 - adc_value_y, HEIGHT - PIXEL_SIZE);
 
