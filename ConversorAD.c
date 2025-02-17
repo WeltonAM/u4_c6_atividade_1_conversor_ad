@@ -12,17 +12,20 @@
 #define I2C_SDA 14
 #define I2C_SCL 15
 #define endereco 0x3C
-#define BUTTON_PIN 6
+#define BTN_B_PIN 6
 
 #define JOYSTICK_X_PIN 26
 #define JOYSTICK_Y_PIN 27
 #define BLUE_LED_PIN 12
 #define RED_LED_PIN 13
+#define GREEN_LED_PIN 11
+#define JOYSTICK_BUTTON_PIN 22
 
 #define PIXEL_SIZE 8
 #define PWM_WRAP 255
 
 volatile bool button_pressed = false;
+volatile bool green_led_state = false;
 uint8_t pixel_x = (WIDTH - PIXEL_SIZE) / 2;
 uint8_t pixel_y = (HEIGHT - PIXEL_SIZE) / 2;
 
@@ -33,7 +36,7 @@ void enter_bootsel()
 
 void button_isr_handler(uint gpio, uint32_t events)
 {
-  if (gpio == BUTTON_PIN && events & GPIO_IRQ_EDGE_FALL)
+  if (gpio == BTN_B_PIN && events & GPIO_IRQ_EDGE_FALL)
   {
     button_pressed = true;
   }
@@ -41,11 +44,11 @@ void button_isr_handler(uint gpio, uint32_t events)
 
 void setup_button_interrupt()
 {
-  gpio_init(BUTTON_PIN);
-  gpio_set_dir(BUTTON_PIN, GPIO_IN);
-  gpio_pull_up(BUTTON_PIN);
+  gpio_init(BTN_B_PIN);
+  gpio_set_dir(BTN_B_PIN, GPIO_IN);
+  gpio_pull_up(BTN_B_PIN);
 
-  gpio_set_irq_enabled_with_callback(BUTTON_PIN, GPIO_IRQ_EDGE_FALL, true, &button_isr_handler);
+  gpio_set_irq_enabled_with_callback(BTN_B_PIN, GPIO_IRQ_EDGE_FALL, true, &button_isr_handler);
 }
 
 uint8_t map_adc_to_screen(uint16_t adc_value, uint8_t max_value)
@@ -85,6 +88,13 @@ int main()
 
   adc_gpio_init(JOYSTICK_X_PIN);
   adc_gpio_init(JOYSTICK_Y_PIN);
+
+  gpio_init(GREEN_LED_PIN);
+  gpio_set_dir(GREEN_LED_PIN, GPIO_OUT);
+
+  gpio_init(JOYSTICK_BUTTON_PIN);
+  gpio_set_dir(JOYSTICK_BUTTON_PIN, GPIO_IN);
+  gpio_pull_up(JOYSTICK_BUTTON_PIN);
 
   uint16_t adc_value_x;
   uint16_t adc_value_y;
@@ -132,6 +142,13 @@ int main()
     {
       button_pressed = false;
       enter_bootsel();
+    }
+
+    if (gpio_get(JOYSTICK_BUTTON_PIN) == 0)
+    {
+      green_led_state = !green_led_state;
+      gpio_put(GREEN_LED_PIN, green_led_state);
+      sleep_ms(300);
     }
 
     sleep_ms(100);
