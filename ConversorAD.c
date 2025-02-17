@@ -33,6 +33,7 @@ volatile bool leds_enabled = true;
 uint8_t pixel_x = (WIDTH - PIXEL_SIZE) / 2;
 uint8_t pixel_y = (WIDTH - PIXEL_SIZE) / 2;
 bool circle_border = false;
+ssd1306_t ssd;
 
 void enter_bootsel()
 {
@@ -49,6 +50,7 @@ void button_isr_handler(uint gpio, uint32_t events)
   if (gpio == BTN_5_PIN && events & GPIO_IRQ_EDGE_FALL)
   {
     leds_enabled = !leds_enabled;
+
     if (!leds_enabled)
     {
       pwm_set_gpio_level(BLUE_LED_PIN, 0);
@@ -98,7 +100,6 @@ int main()
   gpio_pull_up(I2C_SDA);
   gpio_pull_up(I2C_SCL);
 
-  ssd1306_t ssd;
   ssd1306_init(&ssd, WIDTH, HEIGHT, false, endereco, I2C_PORT);
   ssd1306_config(&ssd);
 
@@ -150,7 +151,7 @@ int main()
     uint16_t blue_pwm_value = 0;
     uint16_t red_pwm_value = 0;
 
-    if (adc_value_y > 2200 && leds_enabled) 
+    if (adc_value_y > 2200 && leds_enabled)
     {
       blue_pwm_value = (uint16_t)((adc_value_y - 2200) / 2200.0 * 255);
     }
@@ -174,6 +175,8 @@ int main()
     if (button_pressed)
     {
       button_pressed = false;
+      ssd1306_fill(&ssd, false);
+      ssd1306_send_data(&ssd);
       enter_bootsel();
     }
 
