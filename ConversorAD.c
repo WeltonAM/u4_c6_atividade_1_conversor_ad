@@ -12,20 +12,24 @@
 #define I2C_SDA 14
 #define I2C_SCL 15
 #define endereco 0x3C
+
+#define BTN_5_PIN 5
 #define BTN_B_PIN 6
 
+#define JOYSTICK_BUTTON_PIN 22
 #define JOYSTICK_X_PIN 26
 #define JOYSTICK_Y_PIN 27
+
+#define GREEN_LED_PIN 11
 #define BLUE_LED_PIN 12
 #define RED_LED_PIN 13
-#define GREEN_LED_PIN 11
-#define JOYSTICK_BUTTON_PIN 22
 
 #define PIXEL_SIZE 8
 #define PWM_WRAP 255
 
 volatile bool button_pressed = false;
 volatile bool green_led_state = false;
+volatile bool leds_enabled = true;
 uint8_t pixel_x = (WIDTH - PIXEL_SIZE) / 2;
 uint8_t pixel_y = (WIDTH - PIXEL_SIZE) / 2;
 bool circle_border = false;
@@ -41,6 +45,24 @@ void button_isr_handler(uint gpio, uint32_t events)
   {
     button_pressed = true;
   }
+
+  if (gpio == BTN_5_PIN && events & GPIO_IRQ_EDGE_FALL)
+  {
+    leds_enabled = !leds_enabled;
+    if (!leds_enabled)
+    {
+      pwm_set_gpio_level(BLUE_LED_PIN, 0);
+      pwm_set_gpio_level(RED_LED_PIN, 0);
+    }
+  }
+}
+
+void setup_button_a_interrupt()
+{
+  gpio_init(BTN_5_PIN);
+  gpio_set_dir(BTN_5_PIN, GPIO_IN);
+  gpio_pull_up(BTN_5_PIN);
+  gpio_set_irq_enabled_with_callback(BTN_5_PIN, GPIO_IRQ_EDGE_FALL, true, &button_isr_handler);
 }
 
 void setup_button_interrupt()
@@ -84,6 +106,7 @@ int main()
   ssd1306_send_data(&ssd);
 
   setup_button_interrupt();
+  setup_button_a_interrupt();
   setup_pwm_for_led(BLUE_LED_PIN);
   setup_pwm_for_led(RED_LED_PIN);
 
@@ -127,20 +150,20 @@ int main()
     uint16_t blue_pwm_value = 0;
     uint16_t red_pwm_value = 0;
 
-    if (adc_value_y > 2200)
+    if (adc_value_y > 2200 && leds_enabled) 
     {
       blue_pwm_value = (uint16_t)((adc_value_y - 2200) / 2200.0 * 255);
     }
-    else if (adc_value_y < 1800)
+    else if (adc_value_y < 1800 && leds_enabled)
     {
       blue_pwm_value = (uint16_t)((1800 - adc_value_y) / 1800.0 * 255);
     }
 
-    if (adc_value_x > 2200)
+    if (adc_value_x > 2200 && leds_enabled)
     {
       red_pwm_value = (uint16_t)((adc_value_x - 2200) / 2200.0 * 255);
     }
-    else if (adc_value_x < 1800)
+    else if (adc_value_x < 1800 && leds_enabled)
     {
       red_pwm_value = (uint16_t)((1800 - adc_value_x) / 1800.0 * 255);
     }
